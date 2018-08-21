@@ -13,7 +13,7 @@ class Application(Frame):
             while True:
                 randHeight = randrange(5, HEIGHT - 5)
                 randWidth = randrange(5, WIDTH - 5)
-                if self.grid[randHeight][randWidth] == "  ":
+                if self.grid[randHeight][randWidth] == SPACE:
                     self.foodPosition = [randWidth, randHeight]
                     self.foodEaten = False
                     break
@@ -21,10 +21,10 @@ class Application(Frame):
         """ Updates the snakes positions on the screen every specified time interval. """
         if self.snakeHeadPosition[0] >= WIDTH or self.snakeHeadPosition[0] < 0 or self.snakeHeadPosition[1] >= HEIGHT or self.snakeHeadPosition[1] < 0:
             self.playerAlive = False
-        if self.grid[self.snakeHeadPosition[1] - self.snakeDirection[1]][self.snakeHeadPosition[0] + self.snakeDirection[0]] == "[]":
+        if self.grid[self.snakeHeadPosition[1] - self.snakeDirection[1]][self.snakeHeadPosition[0] + self.snakeDirection[0]] == SEGMENT:
             self.playerAlive = False      
         if self.playerAlive:
-            self.grid = [["  "] * WIDTH for i in  range(HEIGHT)]
+            self.grid = [[SPACE] * WIDTH for i in  range(HEIGHT)]
             self.grid[self.foodPosition[1]][self.foodPosition[0]] = FOOD
             self.snakeHeadPosition[0] += self.snakeDirection[0] 
             self.snakeHeadPosition[1] -= self.snakeDirection[1] 
@@ -36,7 +36,7 @@ class Application(Frame):
                 self.snake.append({"position":newPos, "direction":lastTail["direction"]})
                 
                 self.addFood()
-            self.grid[self.snakeHeadPosition[1]][self.snakeHeadPosition[0]] = "[]"
+            self.grid[self.snakeHeadPosition[1]][self.snakeHeadPosition[0]] = SEGMENT
             
             for snakeSeg in self.snake:
                 for pos in self.snakeHeadMoves:
@@ -51,7 +51,7 @@ class Application(Frame):
                         
                 snakeSeg["position"][0] += snakeSeg["direction"][0] 
                 snakeSeg["position"][1] -= snakeSeg["direction"][1]                
-                self.grid[snakeSeg["position"][1]][snakeSeg["position"][0]] = "[]"
+                self.grid[snakeSeg["position"][1]][snakeSeg["position"][0]] = SEGMENT
                 self.updateWidgets()            
             self.master.after(1000/SPEED, self.moveSnake)
         else:
@@ -74,7 +74,7 @@ class Application(Frame):
         self.updateGridAsText()
         self.game = Label(self, text=self.gridAsText, font='TkFixedFont', borderwidth=4, relief="groove")
         self.game.grid(row=1, column=1)
-        self.playerInfo = Label(self, text=self.playerInfoText, font='TkFixedFont', borderwidth=4, relief="groove")
+        self.playerInfo = Label(self, text="PRESS ANY KEY TO BEGIN!", font='TkFixedFont', borderwidth=4, relief="groove")
         self.playerInfo.grid(row=2, column=1)
     def updateWidgets(self):
         """ Updates the widgets. """
@@ -83,17 +83,22 @@ class Application(Frame):
         self.game["text"] = self.gridAsText
         self.game.grid(row=1, column=1)
         self.playerInfo["text"] = self.playerInfoText  
-    def __init__(self, master=None):
-        Frame.__init__(self, master)
-        self.pack()
-                
-        self.grid = [["  "] * WIDTH for i in  range(HEIGHT)]
-        
-        
+    def startGame(self, event):
         self.bind("<Left>", self.changeSnakeDirection)
         self.bind("<Right>", self.changeSnakeDirection)
         self.bind("<Up>", self.changeSnakeDirection)
         self.bind("<Down>", self.changeSnakeDirection)        
+        
+        self.focus_set()        
+        self.moveSnake()
+    def __init__(self, master=None):
+        Frame.__init__(self, master)
+        self.pack()
+                
+        self.grid = [[SPACE] * WIDTH for i in  range(HEIGHT)]
+        
+        self.bind("<Key>", self.startGame)
+
         
         self.focus_set()
         self.gridAsText = ""
@@ -111,11 +116,11 @@ class Application(Frame):
         self.snakeHeadMoves = []
         self.snake = [{"position":self.snakeSeg1, "direction":self.snakeDirection[:]}, {"position":self.snakeSeg2, "direction":self.snakeDirection[:]}, {"position":self.snakeSeg3, "direction":self.snakeDirection[:]}, {"position":self.snakeSeg4, "direction":self.snakeDirection[:]}]        
         self.playerAlive = True
-        self.snakeLength = len(self.snake)
+        self.snakeLength = len(self.snake) + 1
         self.playerInfoText = "Length : " + str(self.snakeLength)
         self.createWidgets()
 
-        self.moveSnake()
+        
         
 
         
