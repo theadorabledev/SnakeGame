@@ -1,8 +1,7 @@
 from Tkinter import *
 from random import randrange
-HEIGHT = 40
+HEIGHT = 20
 WIDTH = 40
-SPEED = 8
 FOOD = "()"
 SPACE = "  "
 SEGMENT = "[]"
@@ -19,56 +18,58 @@ class Application(Frame):
                     break
     def moveSnake(self):
         """ Updates the snakes positions on the screen every specified time interval. """
-        if self.snakeHeadPosition[0] >= WIDTH or self.snakeHeadPosition[0] < 0 or self.snakeHeadPosition[1] >= HEIGHT or self.snakeHeadPosition[1] < 0:
-            self.playerAlive = False
-        if self.grid[self.snakeHeadPosition[1] - self.snakeDirection[1]][self.snakeHeadPosition[0] + self.snakeDirection[0]] == SEGMENT:
-            self.playerAlive = False      
-        if self.playerAlive:
+        try:
+            if self.snakeHeadPosition[0] < 0 or self.snakeHeadPosition[1] < 0:
+                raise IndexError
+            if self.grid[self.snakeHeadPosition[1] - self.snakeDirection[1]][self.snakeHeadPosition[0] + self.snakeDirection[0]] == SEGMENT:
+                raise IndexError  
+            
+
             self.grid = [[SPACE] * WIDTH for i in  range(HEIGHT)]
             self.grid[self.foodPosition[1]][self.foodPosition[0]] = FOOD
             self.snakeHeadPosition[0] += self.snakeDirection[0] 
             self.snakeHeadPosition[1] -= self.snakeDirection[1] 
+            self.snakeMoves.insert(0, self.snakeHeadPosition[:])
+            self.snakeMoves = self.snakeMoves[0:self.snakeLength]
+            for i in range(self.snakeLength-1, 0, -1):
+                self.grid[self.snakeMoves[i][1]][self.snakeMoves[i][0]] = SEGMENT
             if self.grid[self.snakeHeadPosition[1]][self.snakeHeadPosition[0]] == FOOD:
                 self.snakeLength += 1
-                self.foodEaten = True
-                lastTail = self.snake[-1]
-                newPos = [lastTail["position"][0] - lastTail["direction"][0], lastTail["position"][1] + lastTail["direction"][1]]
-                self.snake.append({"position":newPos, "direction":lastTail["direction"]})
-                
+                self.foodEaten = True   
                 self.addFood()
-            self.grid[self.snakeHeadPosition[1]][self.snakeHeadPosition[0]] = SEGMENT
             
-            for snakeSeg in self.snake:
-                for pos in self.snakeHeadMoves:
-                    
-                    if pos["position"] == snakeSeg["position"]:
-                        snakeSeg["direction"] = pos["direction"][:]
-                        pos["piecesThrough"] += 1
-                        break
-                    if pos["piecesThrough"] == len(self.snake):
+            self.grid[self.snakeHeadPosition[1]][self.snakeHeadPosition[0]] = SEGMENT
+            self.updateWidgets()
+            if not self.paused:
+                self.master.after(1000/self.speed, self.moveSnake)
 
-                        self.snakeHeadMoves.remove(pos)
-                        
-                snakeSeg["position"][0] += snakeSeg["direction"][0] 
-                snakeSeg["position"][1] -= snakeSeg["direction"][1]                
-                self.grid[snakeSeg["position"][1]][snakeSeg["position"][0]] = SEGMENT
-                self.updateWidgets()            
-            self.master.after(1000/SPEED, self.moveSnake)
-        else:
+        except IndexError:
+            self.playerAlive = False
             self.game["text"] = "GAME OVER!"
-            self.game["bg"] = "red"
+            self.game["bg"] = "red"            
     def changeSnakeDirection(self, event):
         """ Changes the direction the snake is moving. """
         move = {"Left":[-1, 0], "Right":[1, 0], "Up":[0, 1], "Down":[0, -1]}[event.keysym][:]
         
         if move != self.snakeDirection and [-i for i in move] != self.snakeDirection:
-            self.snakeHeadMoves.append({"position":self.snakeHeadPosition[:], "direction":move, "piecesThrough":0, "snakeLen": len(self.snake)})
             self.snakeDirection = move[:]
     def updateGridAsText(self):
         """ Turns the grid matrix into a printable string. """
         self.gridAsText = ""
         for row in self.grid:
             self.gridAsText += "".join(row) + "\n"
+    def changeSpeed(self, event):
+        """ Changes the speed of the snake. """
+        self.speed = 2 ** self.scaleSpeed.get()
+    def pauseGame(self, event):
+        """ Pauses the game. """
+        self.paused = not self.paused
+        if self.paused == False:
+            self.moveSnake()
+        else:
+            self.playerInfo["text"] = "GAME PAUSED!"
+        
+        
     def createWidgets(self):        
         """ Creates the widgets. """
         self.updateGridAsText()
@@ -76,6 +77,8 @@ class Application(Frame):
         self.game.grid(row=1, column=1)
         self.playerInfo = Label(self, text="PRESS ANY KEY TO BEGIN!", font='TkFixedFont', borderwidth=4, relief="groove")
         self.playerInfo.grid(row=2, column=1)
+        self.speedScale = Scale(self, from_=1, to=5, orient=HORIZONTAL, label="SPEED: ", variable = self.scaleSpeed, command=self.changeSpeed)
+        self.speedScale.grid(row=3, column=1)
     def updateWidgets(self):
         """ Updates the widgets. """
         self.updateGridAsText()
@@ -84,26 +87,22 @@ class Application(Frame):
         self.game.grid(row=1, column=1)
         self.playerInfo["text"] = self.playerInfoText  
     def startGame(self, event):
+        """ Starts the game after a key has been pressed. """
+        self.unbind("<Key>")
         self.bind("<Left>", self.changeSnakeDirection)
         self.bind("<Right>", self.changeSnakeDirection)
         self.bind("<Up>", self.changeSnakeDirection)
         self.bind("<Down>", self.changeSnakeDirection)        
-        
+        self.bind("<space>", self.pauseGame)  
         self.focus_set()        
         self.moveSnake()
     def __init__(self, master=None):
         Frame.__init__(self, master)
         self.pack()
-                
         self.grid = [[SPACE] * WIDTH for i in  range(HEIGHT)]
-        
         self.bind("<Key>", self.startGame)
-
-        
         self.focus_set()
         self.gridAsText = ""
-        
-
         self.snakeHeadPosition = [WIDTH/2, HEIGHT/2]
         self.snakeSeg1 = [WIDTH/2, HEIGHT/2 + 1]
         self.snakeSeg2 = [WIDTH/2, HEIGHT/2 + 2]
@@ -113,10 +112,12 @@ class Application(Frame):
         self.foodEaten = True
         self.foodPosition = []
         self.addFood()
-        self.snakeHeadMoves = []
-        self.snake = [{"position":self.snakeSeg1, "direction":self.snakeDirection[:]}, {"position":self.snakeSeg2, "direction":self.snakeDirection[:]}, {"position":self.snakeSeg3, "direction":self.snakeDirection[:]}, {"position":self.snakeSeg4, "direction":self.snakeDirection[:]}]        
+        self.snakeMoves = [self.snakeHeadPosition, self.snakeSeg1, self.snakeSeg2, self.snakeSeg3, self.snakeSeg4]
         self.playerAlive = True
-        self.snakeLength = len(self.snake) + 1
+        self.snakeLength = 5
+        self.scaleSpeed = IntVar()
+        self.speed = 2
+        self.paused = False
         self.playerInfoText = "Length : " + str(self.snakeLength)
         self.createWidgets()
 
@@ -126,10 +127,10 @@ class Application(Frame):
         
         
 
-
-if __name__ == "__main__":
+def main():
     root = Tk()   
-    root.geometry = "2000x1500"
     app = Application(master=root)
     app.mainloop()
-    root.destroy()
+    root.destroy()    
+if __name__ == "__main__":
+    main()
