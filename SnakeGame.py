@@ -1,11 +1,23 @@
 from Tkinter import *
 from random import randrange
+import json
 HEIGHT = 20
 WIDTH = 40
 FOOD = "()"
 SPACE = "  "
 SEGMENT = "[]"
 class Application(Frame): 
+    def getGameData(self):
+        """ Gets the saved game data at the beggining of the game. """
+        try:
+            dataJSON = open("snakeGameData.json","r")
+            self.dataJSON = json.loads(dataJSON.read())      
+        except IOError:
+            gameData = {"highScore":0, "width":0, "height":0}
+            dataJSON = open('snakeGameData.json', 'w')
+            json.dump(gameData,dataJSON)
+            self.dataJSON = gameData
+           
     def addFood(self):
         """ Adds the food in a random location. """
         if self.foodEaten:
@@ -46,7 +58,13 @@ class Application(Frame):
         except IndexError:
             self.playerAlive = False
             self.game["text"] = "GAME OVER!"
-            self.game["bg"] = "red"            
+            self.game["bg"] = "red"  
+            gameData = {"highScore":0, "width":WIDTH, "height":HEIGHT}
+            if self.dataJSON["highScore"] < self.snakeLength:
+                gameData["highScore"] = self.snakeLength
+            dataJSON = open('snakeGameData.json', 'w')
+            json.dump(gameData,dataJSON)
+
     def changeSnakeDirection(self, event):
         """ Changes the direction the snake is moving. """
         move = {"Left":[-1, 0], "Right":[1, 0], "Up":[0, 1], "Down":[0, -1]}[event.keysym][:]
@@ -78,11 +96,12 @@ class Application(Frame):
         self.playerInfo = Label(self, text="PRESS ANY KEY TO BEGIN!", font='TkFixedFont', borderwidth=4, relief="groove")
         self.playerInfo.grid(row=2, column=1)
         self.speedScale = Scale(self, from_=1, to=5, orient=HORIZONTAL, label="SPEED: ", variable = self.scaleSpeed, command=self.changeSpeed)
+        self.speedScale.set(3)
         self.speedScale.grid(row=3, column=1)
     def updateWidgets(self):
         """ Updates the widgets. """
         self.updateGridAsText()
-        self.playerInfoText = "Length : " + str(self.snakeLength)
+        self.playerInfoText = "High Score : " + str(self.dataJSON["highScore"]) + "\nLength : " + str(self.snakeLength)
         self.game["text"] = self.gridAsText
         self.game.grid(row=1, column=1)
         self.playerInfo["text"] = self.playerInfoText  
@@ -119,6 +138,7 @@ class Application(Frame):
         self.speed = 2
         self.paused = False
         self.playerInfoText = "Length : " + str(self.snakeLength)
+        self.getGameData()
         self.createWidgets()
 
         
