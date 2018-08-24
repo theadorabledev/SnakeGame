@@ -18,6 +18,13 @@ class Application(Frame):
             json.dump(gameData,dataJSON)
             self.dataJSON = gameData
            
+    def startNewGame(self):
+        self.unbind_all(self.master)
+        
+        
+        #main()
+        self.master.destroy()
+        main()
     def addFood(self):
         """ Adds the food in a random location. """
         if self.foodEaten:
@@ -31,8 +38,7 @@ class Application(Frame):
     def moveSnake(self):
         """ Updates the snakes positions on the screen every specified time interval. """
         try:
-            print self.snakeHeadPosition
-            print self.snakeDirection
+
             if self.snakeHeadPosition[0] < 0 or self.snakeHeadPosition[1] < 0:
                 raise IndexError
             if self.grid[self.snakeHeadPosition[1] - self.snakeDirection[1]][self.snakeHeadPosition[0] + self.snakeDirection[0]] == SEGMENT:
@@ -59,8 +65,7 @@ class Application(Frame):
 
         except IndexError:
             self.playerAlive = False
-            #self.game.delete("1.0", END)
-            #self.game.insert("1.0", "GAME OVER!")
+
             self.playerInfoText += "\nGAME OVER!"
             self.playerInfo["text"] = self.playerInfoText
             self.game["bg"] = "red"  
@@ -73,6 +78,9 @@ class Application(Frame):
             self.dataJSON["height"] = self.height
             dataJSON = open('snakeGameData.json', 'w')
             json.dump(self.dataJSON,dataJSON)
+            
+            self.newGameButton = Button(self, text="NEW GAME!", font='TkFixedFont', borderwidth=4, relief="groove", command=self.startNewGame)
+            self.newGameButton.grid(row=4, column=2)
 
     def changeSnakeDirection(self, event):
         """ Changes the direction the snake is moving. """
@@ -89,6 +97,7 @@ class Application(Frame):
         """ Changes the speed of the snake. """
         self.speed = 2 ** self.scaleSpeed.get()
     def changeDimension(self, event):
+        """ Changes the dimensions of the game. """
         self.game.width = (self.scaleWidth.get()/2)*2*len(SPACE)
         self.game.height = (self.scaleHeight.get()/2)*2
     def pauseGame(self, event):
@@ -123,16 +132,15 @@ class Application(Frame):
         self.speedScale.grid(row=3, column=3)
         self.game.tag_config("foodTag", foreground="red")
         self.game.tag_config("snakeTag", background="forest green")   
-        self.game.tag_config("snakeHeadTag", background="green")          
+        self.game.tag_config("snakeHeadTag", background="green")    
+        self.focus_force()
     def updateWidgets(self):
         """ Updates the widgets. """
         self.updateGridAsText()
-
+        self.game["state"] = NORMAL
         self.playerInfoText = "High Score : " + str(self.dataJSON["highScore"]) + "\nLength : " + str(self.snakeLength)
         self.game.delete("1.1",END)
         self.game.insert("1.0", self.gridAsText)
-        
-        
         
         start = 1.0
         while 1:
@@ -152,7 +160,9 @@ class Application(Frame):
  
         
         self.game.grid(row=1, column=1)
-        self.playerInfo["text"] = self.playerInfoText  
+        self.playerInfo["text"] = self.playerInfoText
+        self.game["state"] = DISABLED
+        self.focus_set()
     def startGame(self, event):
         """ Starts the game after a key has been pressed. """
         self.unbind("<Key>")
@@ -165,6 +175,8 @@ class Application(Frame):
         self.moveSnake()
     def __init__(self, master=None):
         Frame.__init__(self, master)
+
+        self.focus_force()
         self.pack()
         self.width = 40
         self.height = 20
