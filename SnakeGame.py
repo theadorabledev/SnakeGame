@@ -4,6 +4,8 @@ import json
 FOOD = "()"
 SPACE = "  "
 SEGMENT = "[]"
+
+#Reset: \u001b[0m
 class Application(Frame): 
     def getGameData(self):
         """ Gets the saved game data at the beggining of the game. """
@@ -29,6 +31,8 @@ class Application(Frame):
     def moveSnake(self):
         """ Updates the snakes positions on the screen every specified time interval. """
         try:
+            print self.snakeHeadPosition
+            print self.snakeDirection
             if self.snakeHeadPosition[0] < 0 or self.snakeHeadPosition[1] < 0:
                 raise IndexError
             if self.grid[self.snakeHeadPosition[1] - self.snakeDirection[1]][self.snakeHeadPosition[0] + self.snakeDirection[0]] == SEGMENT:
@@ -55,7 +59,10 @@ class Application(Frame):
 
         except IndexError:
             self.playerAlive = False
-            self.game["text"] = "GAME OVER!"
+            #self.game.delete("1.0", END)
+            #self.game.insert("1.0", "GAME OVER!")
+            self.playerInfoText += "\nGAME OVER!"
+            self.playerInfo["text"] = self.playerInfoText
             self.game["bg"] = "red"  
             
             
@@ -75,15 +82,15 @@ class Application(Frame):
             self.snakeDirection = move[:]
     def updateGridAsText(self):
         """ Turns the grid matrix into a printable string. """
-        self.gridAsText = ""
+        self.gridAsText = u""
         for row in self.grid:
-            self.gridAsText += "".join(row) + "\n"
+            self.gridAsText += u"".join(row) + "\n"
     def changeSpeed(self, event):
         """ Changes the speed of the snake. """
         self.speed = 2 ** self.scaleSpeed.get()
     def changeDimension(self, event):
-        self.width = (self.scaleWidth.get()/2)*2
-        self.height = (self.scaleHeight.get()/2)*2
+        self.game.width = (self.scaleWidth.get()/2)*2*len(SPACE)
+        self.game.height = (self.scaleHeight.get()/2)*2
     def pauseGame(self, event):
         """ Pauses the game. """
         self.paused = not self.paused
@@ -96,7 +103,8 @@ class Application(Frame):
     def createWidgets(self):        
         """ Creates the widgets. """
         self.updateGridAsText()
-        self.game = Label(self, text=self.gridAsText, font='TkFixedFont', borderwidth=4, relief="groove")
+        self.game = Text(self, font='TkFixedFont', borderwidth=4, relief="groove", height=self.dataJSON["height"], width=(self.dataJSON["width"]*len(SPACE)))
+        self.game.insert(END, self.gridAsText)
         self.game.grid(row=1, column=1, columnspan=3)
         self.playerInfo = Label(self, text="PRESS ANY KEY TO BEGIN!", font='TkFixedFont', borderwidth=4, relief="groove")
         self.playerInfo.grid(row=2, column=2)
@@ -113,12 +121,36 @@ class Application(Frame):
         self.speedScale = Scale(self, from_=1, to=5, orient=HORIZONTAL, label="SPEED: ", variable = self.scaleSpeed, command=self.changeSpeed)
         self.speedScale.set(self.dataJSON["speed"])
         self.speedScale.grid(row=3, column=3)
-       
+        self.game.tag_config("foodTag", foreground="red")
+        self.game.tag_config("snakeTag", background="forest green")   
+        self.game.tag_config("snakeHeadTag", background="green")          
     def updateWidgets(self):
         """ Updates the widgets. """
         self.updateGridAsText()
+
         self.playerInfoText = "High Score : " + str(self.dataJSON["highScore"]) + "\nLength : " + str(self.snakeLength)
-        self.game["text"] = self.gridAsText
+        self.game.delete("1.1",END)
+        self.game.insert("1.0", self.gridAsText)
+        
+        
+        
+        start = 1.0
+        while 1:
+            pos = self.game.search("[]", start, stopindex=END)
+            if not pos:
+                break
+            
+            self.game.tag_add("snakeTag", pos, pos + "+"+str(len(SPACE))+"c")
+
+            start = pos + "+1c"        
+        
+        headPos = str(self.snakeHeadPosition[1]+1) + "." + str(self.snakeHeadPosition[0]*2)
+        self.game.tag_add("snakeHeadTag", headPos, headPos + "+"+str(len(SPACE))+"c")
+        
+        foodPos = str(self.foodPosition[1]+1) + "." + str(self.foodPosition[0]*2)
+        self.game.tag_add("foodTag", foodPos, foodPos + "+"+str(len(SPACE))+"c")
+ 
+        
         self.game.grid(row=1, column=1)
         self.playerInfo["text"] = self.playerInfoText  
     def startGame(self, event):
