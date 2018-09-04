@@ -26,5 +26,5 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 ## Acknowledgements
 
-* ANybody who wants to feel beter, give youraself a pat on the back.
+* Anybody who wants to feel beter, give yourself a pat on the back.
 
